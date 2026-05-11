@@ -1,0 +1,8 @@
+resources:
+  - security-service.yaml
+  - backend.yaml
+  - frontend.yaml
+  - api-gateway.yaml
+  - postgres.yaml
+  - redis.yaml
+  - elasticsearch.yaml

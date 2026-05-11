@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if ! command -v nix >/dev/null 2>&1; then
+  cat >&2 <<'MSG'
+Nix is not installed or is not on PATH.
+
+Use:
+  nix develop
+
+If you typed "nix-develop", that is not the native Nix command. This helper
+accepts that habit, but it still needs the real "nix" executable installed.
+Inside the generated Dev Container, the language and cloud toolchains are
+already installed by devcontainer features, so Nix is optional there.
+MSG
+  exit 127
+fi
+
+exec nix develop "$@"

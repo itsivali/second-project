@@ -1,0 +1,132 @@
+name: second-project
+
+services:
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks: [platform]
+
+  security-service:
+    build:
+      context: ./security-service
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-development-only-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-security-service}
+    ports:
+      - "4000:4000"
+    networks: [platform]
+
+  backend:
+    build:
+      context: ./services/backend
+    environment:
+      PORT: 3000
+      JWT_ISSUER: ${JWT_ISSUER:-security-service}
+      SECURITY_SERVICE_URL: http://security-service:4000
+    depends_on:
+      - security-service
+    ports:
+      - "3100:3000"
+    networks: [platform]
+
+  frontend:
+    build:
+      context: ./services/frontend
+    environment:
+      PORT: 3000
+      JWT_ISSUER: ${JWT_ISSUER:-security-service}
+      SECURITY_SERVICE_URL: http://security-service:4000
+    depends_on:
+      - security-service
+    ports:
+      - "3101:3000"
+    networks: [platform]
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    environment:
+      PORT: 3000
+      JWT_ISSUER: ${JWT_ISSUER:-security-service}
+      SECURITY_SERVICE_URL: http://security-service:4000
+    depends_on:
+      - security-service
+    ports:
+      - "3102:3000"
+    networks: [platform]
+
+  gateway:
+    image: kong:3.9
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./gateway/config/kong.yml:/kong/declarative/kong.yml:ro
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+    depends_on:
+      - security-service
+    networks: [platform]
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-app} -d $${POSTGRES_DB:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [platform]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-change-me}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-change-me}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks: [platform]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-change-me}
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks: [platform]
+
+networks:
+  platform:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:

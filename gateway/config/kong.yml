@@ -1,0 +1,40 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: security-service
+    url: http://security-service:4000
+    routes:
+      - name: auth
+        paths: ["/auth"]
+        strip_path: false
+  - name: backend
+    url: http://backend:3000
+    routes:
+      - name: backend
+        paths: ["/api/backend"]
+        strip_path: false
+  - name: frontend
+    url: http://frontend:3000
+    routes:
+      - name: frontend
+        paths: ["/api/frontend"]
+        strip_path: false
+  - name: api-gateway
+    url: http://api-gateway:3000
+    routes:
+      - name: api-gateway
+        paths: ["/api/api-gateway"]
+        strip_path: false
+
+plugins:
+  - name: response-transformer
+    config:
+      remove:
+        headers:
+          - X-Powered-By
+  - name: request-transformer
+    config:
+      remove:
+        headers:
+          - X-Powered-By

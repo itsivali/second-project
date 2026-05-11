@@ -1,0 +1,15 @@
+{
+  "name": "second-project",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "security-service",
+    "packages/*"
+  ],
+  "scripts": {
+    "compose:up": "docker compose up --build",
+    "compose:down": "docker compose down --remove-orphans",
+    "scan": "trivy fs --security-checks vuln,config,secret ."
+  }
+}
